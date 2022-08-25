@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.DS_Store
+.env
+doc.js
+pagekite.py
+test.txt
+shopify.js
+recharge.html
+test.js
+temp.js
