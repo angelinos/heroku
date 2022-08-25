@@ -3,7 +3,7 @@
 /* *******************************************************************
 In this file: get, add, update, delete subscriptions by calling recharge api
 
-Last update: 07/15/2020
+Last update: 08/15/2020
 Developer  : sven.homan@gmail.com
 ********************************************************************* */
 
@@ -16,6 +16,7 @@ const app = express();
 const dotenv = require("dotenv").config();
 //const session = require("express-session");
 const braintree = require("braintree");
+const { json } = require("body-parser");
 
 const PORT = process.env.PORT;
 let dev = false;
@@ -104,7 +105,7 @@ app.get("/orders/fulfillments", (req, res) => {
   //console.log(req.header("auth-key"));
   let order_id = req.query.order_id;
   //GET /admin/api/2020-04/orders/#{order_id}/fulfillments.json
-  let requestUrl = `https://angelinos-com.myshopify.com/admin/api/2020-04/orders/${order_id}/fulfillments.json`;
+  let requestUrl = process.env.shopifyAdminApiUrl + "/orders/" + order_id + "/fulfillments.json";
   if (test) console.log(requestUrl);
   if (test) console.log(requestHeadersShopify);
   request
@@ -115,7 +116,51 @@ app.get("/orders/fulfillments", (req, res) => {
     .catch((error) => {
       //console.log("get order fulfillment error", error);
       console.log("get fulfillment error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
+    });
+});
+
+//get customer orders from shopify
+app.post("/orders", (req, res) => {
+  //console.log(req.header("auth-key"));
+  let customer_id = req.body.customer_id;
+  //GET /admin/api/2020-04/customers/1234/orders.json?status=any
+  let requestUrl = process.env.shopifyAdminApiUrl + "/customers/" + customer_id + "/orders.json?status=any";
+  if (test) console.log(requestUrl);
+  if (test) console.log(requestHeadersShopify);
+  request
+    .get(requestUrl, { headers: requestHeadersShopify })
+    .then((res1) => {
+      console.log("get customer orders success");
+      if(test) console.log('orders', res1);
+      res.send(res1);
+    })
+    .catch((error) => {
+      //console.log("get orders error", error);
+      console.log("get customer orders error");
+      res.status(error.statusCode).send(error.message);
+    });
+});
+
+//get 1 order from shopify
+app.post("/order", (req, res) => {
+  //console.log(req.header("auth-key"));
+  let order_id = req.body.order_id;
+  //GET /admin/api/2020-04/orders/1234.json
+  let requestUrl = process.env.shopifyAdminApiUrl + "/orders/" + order_id + ".json";
+  if (test) console.log(requestUrl);
+  if (test) console.log(requestHeadersShopify);
+  request
+    .get(requestUrl, { headers: requestHeadersShopify })
+    .then((res1) => {
+      console.log("get order success");
+      if(test) console.log('order', res1);
+      res.send(res1);
+    })
+    .catch((error) => {
+      //console.log("get order error", error);
+      console.log("get order error");
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -145,7 +190,7 @@ app.get("/subscriptions", (req, res) => {
     })
     .catch((error) => {
       console.log("get error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -154,21 +199,22 @@ app.post("/subscriptions/onetimes", (req, res) => {
   let data = req.body;
   let address_id = data.address_id;
   let created_at_min = data.created_at_min.substring(0, 10);
-  let requestUrl = rootUrl + "/onetimes";
-  let payload = {
-    address_id,
-    created_at_min,
-  };
+  let requestUrl = rootUrl + "/onetimes" + "?address_id=" + data.address_id.toString();
+  //let payload = {
+  //  address_id,
+  //  created_at_min,
+  //};
   if (test) console.log(requestUrl, payload);
   request
-    .get(requestUrl, { json: payload, headers: requestHeaders })
+    //.get(requestUrl, { json: payload, headers: requestHeaders })
+    .get(requestUrl, { json: true, headers: requestHeaders })
     .then((res1) => {
       if (test) console.log("get onetimes success");
       res.send(res1);
     })
     .catch((error) => {
       if (test) console.log("get onetimes error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -190,7 +236,7 @@ app.get("/subscriptions/count", (req, res) => {
     })
     .catch((error) => {
       console.log("get sub count error");
-      res1.status(error.statusCode).send(error.error_description);
+      res1.status(error.statusCode).send(error.message);
     });
 });
 
@@ -214,7 +260,7 @@ app.get("/subscriptions/discount", (req, res) => {
     })
     .catch((error) => {
       console.log("get discount error");
-      res1.status(error.statusCode).send(error.error_description);
+      res1.status(error.statusCode).send(error.message);
     });
 });
 
@@ -238,7 +284,7 @@ app.get("/orders/count", (req, res) => {
     })
     .catch((error) => {
       console.log("get order count error");
-      res1.status(error.statusCode).send(error.error_description);
+      res1.status(error.statusCode).send(error.message);
     });
 });
 
@@ -276,13 +322,13 @@ app.put("/subscriptions/upd/", (req, res) => {
               res.send(data1);
             })
             .catch((error1) => {
-              data1.status(error1.statusCode).send(error1.error_description);
+              data1.status(error1.statusCode).send(error1.message);
             });
         }, 1000);
       } else {
         data
           .status(error.statusCode)
-          .send("update call failed", error.error_description);
+          .send("update call failed", error.message);
       }
     });
 });
@@ -331,13 +377,13 @@ app.post("/subscriptions/add/", (req, res) => {
               res.send(data1);
             })
             .catch((error1) => {
-              data1.status(error1.statusCode).send(error1.error_description);
+              data1.status(error1.statusCode).send(error1.message);
             });
         }, 1000);
       } else {
         res1
           .status(error.statusCode)
-          .send("add call failed", error.error_description);
+          .send("add call failed", error.message);
       }
     });
 });
@@ -374,7 +420,7 @@ app.delete("/subscriptions/del/", (req, res) => {
     })
     .catch((error) => {
       if (test) console.log("delete error");
-      res1.status(error.statusCode).send(error.error_description);
+      res1.status(error.statusCode).send(error.message);
     });
 });
 
@@ -423,7 +469,7 @@ app.post("/orders/clone/", (req, res) => {
     })
     .catch((error) => {
       if (test) console.log("order clone error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -447,7 +493,7 @@ app.post("/subscriptions/delete-bulk/", (req, res) => {
     })
     .catch((error) => {
       if (test) console.log("bulk-delete error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -471,7 +517,7 @@ app.post("/subscriptions/create-bulk/", (req, res) => {
     })
     .catch((error) => {
       if (test) console.log("bulk-create error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -507,8 +553,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       //res.send(res1);
     })
     .catch((error) => {
-      console.log("bulk-delete error");
-      res.status(error.statusCode).send(error.error_description);
+      console.log("bulk-delete error", error);
+      res.status(error.statusCode).send(error.message);
     });
 
   if (arr2.length > 0) {
@@ -521,8 +567,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         //res.send(res1);
       })
       .catch((error) => {
-        console.log("bulk-delete 2 error");
-        res.status(error.statusCode).send(error.error_description);
+        console.log("bulk-delete 2 error", error);
+        res.status(error.statusCode).send(error.message);
       });
   }
 
@@ -550,8 +596,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       //res.send(res1);
     })
     .catch((error) => {
-      console.log("bulk-create error");
-      res.status(error.statusCode).send(error.error_description);
+      console.log("bulk-create error", error);
+      res.status(error.statusCode).send(error.message);
     });
 
   if (arr2.length > 0) {
@@ -564,8 +610,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         //res.send(res1);
       })
       .catch((error) => {
-        console.log("bulk-create 2 error");
-        res.status(error.statusCode).send(error.error_description);
+        console.log("bulk-create 2 error", error);
+        res.status(error.statusCode).send(error.message);
       });
   }
 
@@ -584,8 +630,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         //res.send(res1);
       })
       .catch((error) => {
-        console.log("onetime delete error");
-        res.status(error.statusCode).send(error.error_description);
+        console.log("onetime delete error", error);
+        res.status(error.statusCode).send(error.message);
       });
   }
 
@@ -603,8 +649,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         //res.send(res1);
       })
       .catch((error) => {
-        console.log("onetime create error");
-        res.status(error.statusCode).send(error.error_description);
+        console.log("onetime create error", error);
+        res.status(error.statusCode).send(error.message);
       });
   }
   res.status(200).send("OK");
@@ -632,7 +678,62 @@ app.post("/subscriptions/customer/", async (req, res) => {
     })
     .catch((error) => {
       console.log("get customer error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
+    });
+});
+
+//make customer in recharge
+app.post("/subscriptions/customer/add", async (req, res) => {
+  let data = req.body;
+  //console.log("subscriptions/customer/add", data);
+  //let requestUrl = process.env.rechargeUrl;
+  let requestUrl =
+    process.env.rechargeUrl.replace("/subscriptions", "") + "/customers";
+  let payload = data;
+  let requestBody = { json: payload, headers: requestHeaders };
+  //console.log(requestUrl, requestBody);
+  //return 0;
+  request
+    .post(requestUrl, { json: payload, headers: requestHeaders })
+    //.get(requestUrl, { headers: requestHeaders })
+    .then((res1) => {
+      console.log("add customer success");
+      console.log("add customer success", res1);
+      if (false){
+        console.log("add customer success", res1.customer.id.toString());
+        let requestUrl2 = process.env.rechargeUrl.replace("/subscriptions", "") + "/customers/"+ res1.customer.id.toString() +"/addresses";
+        console.log("add customer success", requestUrl2);
+        //let json_data = JSON.parse(data);
+        let payload2 = { 
+          "address1": res1.customer.billing_address1,
+          "address2": res1.customer.billing_address2,
+          "city": res1.customer.billing_city,
+          "province": res1.customer.billing_province,
+          "first_name": res1.customer.first_name,
+          "last_name": res1.customer.last_name,
+          "zip": res1.customer.billing_zip,
+          "company": res1.customer.billing_company,
+          "phone": res1.customer.billing_phone,
+          "cart_note": null,
+          "country": res1.customer.billing_country
+        };
+        console.log("add customer success", payload2);
+        let requestBody2 = { json: payload2, headers: requestHeaders };
+        request
+          .post(requestUrl2, { json: payload2, headers: requestHeaders })
+          .then((res2) => {
+            console.log("add customer address success");
+          })
+          .catch((error2) => {
+            console.log("add customer address error", error2);
+          });
+      };
+
+      res.send(res1);
+    })
+    .catch((error) => {
+      console.log("add customer error", error);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -657,7 +758,7 @@ app.post("/subscriptions/customer/payment_sources", async (req, res) => {
     })
     .catch((error) => {
       console.log("get customer payment sources error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -682,7 +783,7 @@ app.post("/subscriptions/customer/addresses", async (req, res) => {
     })
     .catch((error) => {
       console.log("get customer addresses error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -705,7 +806,30 @@ app.post("/subscriptions/discounts", async (req, res) => {
     })
     .catch((error) => {
       console.log("get recharge discount error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
+    });
+});
+
+//get Recharge Order(s)
+app.post("/subscriptions/orders", async (req, res) => {
+  let data = req.body;
+  if (test) console.log("subscriptions/orders", data);
+  let requestUrl =
+    process.env.rechargeUrl.replace("/subscriptions", "") + data.final_url;
+  let payload = {};
+  let requestBody = { json: payload, headers: requestHeaders };
+  if (test) console.log(requestUrl, requestBody);
+  //return 0;
+  request
+    .get(requestUrl, { headers: requestHeaders })
+    .then((res1) => {
+      console.log("get recharge order success");
+      //console.log(res1);
+      res.send(res1);
+    })
+    .catch((error) => {
+      console.log("get recharge order error");
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -729,8 +853,8 @@ app.post("/subscriptions/checkout/add", async (req, res) => {
       res.send(res1);
     })
     .catch((error) => {
-      console.log("create checkout error");
-      res.status(error.statusCode).send(error.error_description);
+      console.log("create checkout error", error);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -755,7 +879,7 @@ app.post("/subscriptions/checkout/update", async (req, res) => {
     })
     .catch((error) => {
       console.log("update checkout error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
 });
 
@@ -764,7 +888,7 @@ app.post("/subscriptions/checkout/process", async (req, res) => {
   let data = req.body;
   let payload = {};
   let requestUrl;
-  console.log(data); 
+  console.log(data);
   /* comming in
   data.data = {
       "payment_processor": sp.payment_processor,
@@ -778,24 +902,21 @@ app.post("/subscriptions/checkout/process", async (req, res) => {
     //https://developers.braintreepayments.com/reference/request/payment-method-nonce/create/node
     //https://developers.braintreepayments.com/start/hello-server/node
     //console.log(process.env.braintree_PrivateKey);
-    //*
+    /*
     let gateway = braintree.connect({
       environment: braintree.Environment.Production,
       merchantId: "h9smwz5jxtjgk6vs",
       publicKey: "v3b5rr8qym73w53y",
       privateKey: "c243aeed3625a66b6e791d9881bcc08e"
     });
-   /*/
+   */
 
-    //* not working
     let gateway = braintree.connect({
       environment: braintree.Environment.Production,
       merchantId: process.env.braintree_MerchantId,
       publicKey: process.env.braintree_PublicKey,
       privateKey: process.env.braintree_PrivateKey
     });
-    //*/
-    //return;
       
     gateway.customer.find(cust_id, function(err, customer) {
       //console.log(customer);
@@ -809,7 +930,8 @@ app.post("/subscriptions/checkout/process", async (req, res) => {
             //checkout process
             data.data.payment_token = nonce;
             payload = data.data;
-            requestUrl = process.env.rechargeUrl.replace("/subscriptions", "") + data.final_url;
+            //requestUrl = process.env.rechargeUrl.replace("/subscriptions", "") + data.final_url;
+            requestUrl = `https://api.rechargeapps.com${data.final_url}`;
             if (test) console.log(requestUrl, payload, requestHeaders);
             //return 0;
             request
@@ -867,7 +989,7 @@ app.post("/subscriptions/checkout/process", async (req, res) => {
     })
     .catch((error) => {
       console.log("get braintree nonce error");
-      res.status(error.statusCode).send(error.error_description);
+      res.status(error.statusCode).send(error.message);
     });
     */
   }else{
@@ -876,24 +998,7 @@ app.post("/subscriptions/checkout/process", async (req, res) => {
     console.log('charge aborted');
     res.send("charge aborted");
   }
- /*
-  data.data.payment_token = payment_token;
-  payload = data.data;
-  requestUrl = process.env.rechargeUrl.replace("/subscriptions", "") + data.final_url;
-  if (test) console.log(requestUrl, payload, requestHeaders);
-  //return 0;
-  await request
-    .post(requestUrl, { json: payload, headers: requestHeaders })
-    .then((res1) => {
-      console.log("process checkout success");
-      console.log(res1);
-      res.send(res1);
-    })
-    .catch((error) => {
-      console.log("process checkout error", error.body);
-      res.status(error.statusCode).send(error.body);
-    });
-*/
+ 
 });
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
