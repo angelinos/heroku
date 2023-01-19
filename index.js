@@ -534,6 +534,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
   let arr1 = [];
   let arr2 = [];
   let i = 0;
+  
+  console.log("ara 1");
   for (let item of arr_del) {
     i++;
     if (i < bulk_limit + 1) {
@@ -542,6 +544,9 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       arr2.push(item);
     }
   }
+  
+    console.log("ara 2");
+
   let payload = { subscriptions: arr1 };
   //let requestBody = { json: payload, headers: requestHeaders };
   //if (test) console.log(requestUrl, requestBody);
