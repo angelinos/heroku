@@ -656,7 +656,8 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         res.status(error.statusCode).send(error.message);
       });
   }
-  res.status(200).send("OK");
+  //res.status(200).send("OK");
+  res.status(200).send({ message: 'ok })
 });
 
 //TEST
