@@ -574,8 +574,6 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       });
   }
 
-    console.log("ara bc1");
-
   //2. subscriptions create in bulk
   i = 0;
   let arr_add = data.subscriptions.add;
@@ -589,7 +587,6 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       arr2.push(item);
     }
   }
-    console.log("ara bc2");
 
   //requestUrl = root + data.final_urls.add;
   requestUrl = `${root}/addresses/${data.address_id}/subscriptions-bulk`;
@@ -605,8 +602,6 @@ app.post("/subscriptions/update-all/", async (req, res) => {
       console.log("bulk-create error", error);
       res.status(error.statusCode).send(error.message);
     });
-
-      console.log("ara bc2");
 
   if (arr2.length > 0) {
     payload = { subscriptions: arr2 };
@@ -661,7 +656,6 @@ app.post("/subscriptions/update-all/", async (req, res) => {
         res.status(error.statusCode).send(error.message);
       });
   }
-  console.log("ara finished");
   res.status(200).send("OK");
 });
 
